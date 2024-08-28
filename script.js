@@ -77,54 +77,66 @@ document.addEventListener('DOMContentLoaded', () => {
         if (bars.style.display === 'none') {
             bars.style.display = 'flex';
             startStopwatch();
+            recognition.start();
         } else {
             bars.style.display = 'none';
             stopStopwatch();
+            recognition.stop();
         }
     });
 
     btn3.addEventListener('click', () => {
         resetStopwatch();
         textareaElement.value = ''; // Clear textarea when btn-3 is clicked
+        recognition.stop();
     });
+});
 
-    document.querySelector('.btn-1').addEventListener('click', function () {
-        let text = document.getElementById('textarea').value;
-        if (text) {
-            let speech = new SpeechSynthesisUtterance(text);
-            speech.lang = 'en-US';
-            speech.rate = 1;
-            window.speechSynthesis.speak(speech);
-        } else {
-            alert("Please enter some text in the textarea.");
+document.querySelector('.btn-1').addEventListener('click', function () {
+    let text = document.getElementById('textarea').value;
+    if (text) {
+        let speech = new SpeechSynthesisUtterance(text);
+        speech.lang = 'en-US';
+        speech.rate = 1;
+        window.speechSynthesis.speak(speech);
+    } else {
+        alert("Please enter some text in the textarea.");
+    }
+});
+
+const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+recognition.lang = 'en-US';
+recognition.continuous = true;
+recognition.interimResults = true;
+
+const textarea = document.getElementById('textarea');
+
+recognition.onresult = function (event) {
+    let finalTranscript = textarea.value;
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
         }
-    });
+    }
+    textarea.value = finalTranscript;
+};
 
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = 'en-US';
-    recognition.continuous = true; // Enable continuous speech recognition
-    recognition.interimResults = true; // Enable interim results
+recognition.onspeechend = function () {
+    recognition.start(); // Automatically restart recognition after speech ends
+};
 
-    let interimTranscript = '';
+recognition.onerror = function (event) {
+    console.error('Speech recognition error', event.error);
+};
 
-    recognition.onresult = function (event) {
-        let finalTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            if (event.results[i].isFinal) {
-                finalTranscript += event.results[i][0].transcript;
-            } else {
-                interimTranscript = event.results[i][0].transcript;
-            }
-        }
-        textareaElement.value = finalTranscript + interimTranscript;
-    };
+recognition.onstart = function () {
+    console.log('Speech recognition started');
+};
 
-    recognition.onerror = function (event) {
-        console.error('Speech recognition error', event.error);
-    };
+recognition.onend = function () {
+    console.log('Speech recognition ended');
+};
 
-    btn2.addEventListener('click', function () {
-        textareaElement.value = '';
-        recognition.start();
-    });
+document.querySelector('.btn-2').addEventListener('click', function () {
+    recognition.stop(); // Stop recognition without clearing the text
 });
