@@ -15,28 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let startTime = 0;
     let elapsedTime = 0;
 
-    // Initialize Speech Recognition API
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    recognition.onresult = (event) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
-
-        for (let i = 0; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-                finalTranscript += transcript;
-            } else {
-                interimTranscript += transcript;
-            }
-        }
-        textareaElement.value = finalTranscript || interimTranscript;
-    };
-
     function updateTime() {
         const elapsed = Date.now() - startTime + elapsedTime;
         const totalSeconds = Math.floor(elapsed / 1000);
@@ -99,22 +77,54 @@ document.addEventListener('DOMContentLoaded', () => {
         if (bars.style.display === 'none') {
             bars.style.display = 'flex';
             startStopwatch();
-            recognition.start();
         } else {
             bars.style.display = 'none';
             stopStopwatch();
-            recognition.stop();
         }
     });
 
     btn3.addEventListener('click', () => {
         resetStopwatch();
         textareaElement.value = ''; // Clear textarea when btn-3 is clicked
-        recognition.stop();
     });
 
-    btn1.addEventListener('click', () => {
-        const utterance = new SpeechSynthesisUtterance(textareaElement.value);
-        window.speechSynthesis.speak(utterance);
+    document.querySelector('.btn-1').addEventListener('click', function () {
+        let text = document.getElementById('textarea').value;
+        if (text) {
+            let speech = new SpeechSynthesisUtterance(text);
+            speech.lang = 'en-US';
+            speech.rate = 1;
+            window.speechSynthesis.speak(speech);
+        } else {
+            alert("Please enter some text in the textarea.");
+        }
+    });
+
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'en-US';
+    recognition.continuous = true; // Enable continuous speech recognition
+    recognition.interimResults = true; // Enable interim results
+
+    let interimTranscript = '';
+
+    recognition.onresult = function (event) {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+            } else {
+                interimTranscript = event.results[i][0].transcript;
+            }
+        }
+        textareaElement.value = finalTranscript + interimTranscript;
+    };
+
+    recognition.onerror = function (event) {
+        console.error('Speech recognition error', event.error);
+    };
+
+    btn2.addEventListener('click', function () {
+        textareaElement.value = '';
+        recognition.start();
     });
 });
